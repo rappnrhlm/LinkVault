@@ -1,0 +1,8 @@
+node_modules/
+dist/
+data/
+.taste-skill/
+test-results/
+playwright-report/
+*.log
+.env

@@ -1,0 +1,21 @@
+{
+  "name": "linkvault",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": ["apps/api", "apps/web", "packages/shared"],
+  "scripts": {
+    "dev": "npm run build -w @linkvault/shared && concurrently -k -n api,web -c green,cyan \"npm run dev -w @linkvault/api\" \"npm run dev -w @linkvault/web\"",
+    "build": "npm run build -w @linkvault/shared && npm run build -w @linkvault/api && npm run build -w @linkvault/web",
+    "start": "npm run start -w @linkvault/api",
+    "test": "npm run test -w @linkvault/api",
+    "test:e2e": "playwright test",
+    "typecheck": "npm run build -w @linkvault/shared && npm run typecheck -w @linkvault/api && npm run typecheck -w @linkvault/web",
+    "backup": "node scripts/backup.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "concurrently": "^9.1.0",
+    "typescript": "^5.7.0"
+  }
+}

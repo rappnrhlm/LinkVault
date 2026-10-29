@@ -1,0 +1,12 @@
+import { DatabaseSync } from 'node:sqlite';
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+const dbPath = process.env.LINKVAULT_DB ?? 'data/linkvault.db';
+const dir = join('data', 'backups');
+mkdirSync(dir, { recursive: true });
+const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+const target = join(dir, `linkvault-${stamp}.db`);
+const db = new DatabaseSync(dbPath, { readOnly: true });
+db.exec(`VACUUM INTO '${target.replaceAll("'", "''")}'`);
+db.close();
+console.log(`Backup written to ${target}`);
