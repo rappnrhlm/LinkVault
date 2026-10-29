@@ -29,8 +29,18 @@ export interface AppOptions {
   serveWeb?: boolean;
 }
 
-const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
-const LOCAL_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
+const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\]|armbian|.*\.local|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|100\.\d+\.\d+\.\d+)(:\d+)?$/i;
+const LOCAL_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|armbian|.*\.local|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|100\.\d+\.\d+\.\d+)(:\d+)?$/i;
+
+function isAllowedHost(host: string): boolean {
+  if (process.env.ALLOW_REMOTE === 'true' || process.env.HOST === '0.0.0.0') return true;
+  return LOCAL_HOST.test(host);
+}
+
+function isAllowedOrigin(origin: string): boolean {
+  if (process.env.ALLOW_REMOTE === 'true' || process.env.HOST === '0.0.0.0') return true;
+  return LOCAL_ORIGIN.test(origin);
+}
 
 export async function createApp(options: AppOptions = {}): Promise<FastifyInstance> {
   const dbPath = options.dbPath ?? process.env.LINKVAULT_DB ?? 'data/linkvault.db';
@@ -48,12 +58,12 @@ export async function createApp(options: AppOptions = {}): Promise<FastifyInstan
 
   app.addHook('onRequest', async (request, reply) => {
     const host = request.headers.host ?? '';
-    if (!LOCAL_HOST.test(host)) {
-      return reply.code(403).send({ error: 'Requests must target localhost' });
+    if (!isAllowedHost(host)) {
+      return reply.code(403).send({ error: 'Requests must target localhost or private network' });
     }
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
       const origin = request.headers.origin;
-      if (origin && !LOCAL_ORIGIN.test(origin)) {
+      if (origin && !isAllowedOrigin(origin)) {
         return reply.code(403).send({ error: 'Origin not allowed' });
       }
     }
@@ -75,7 +85,7 @@ export async function createApp(options: AppOptions = {}): Promise<FastifyInstan
 
   await app.register(cors, {
     origin: (origin, callback) => {
-      if (!origin || LOCAL_ORIGIN.test(origin)) callback(null, true);
+      if (!origin || isAllowedOrigin(origin)) callback(null, true);
       else callback(new Error('Origin not allowed'), false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
